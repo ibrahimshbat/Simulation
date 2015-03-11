@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -20,8 +21,8 @@ public class ServerRondomAckWithTwoServers {
 	    PrintWriter outFile = new PrintWriter(new BufferedWriter(new FileWriter("d://data2.txt",true)));
 	    int totalAckGenerated=0;
 	    int totalNonAckGenerated=0;
-	    int maxSequentialAck=0;
-	    int maxSequentialNonAck=0;
+	    int maxSequentialMaj=0;
+	    int maxSequentialNonMaj=0;
 	    int totalSucceed = 0;
 	    int totalUnsucceed = 0;
 	    int twoAck=0;
@@ -38,7 +39,17 @@ public class ServerRondomAckWithTwoServers {
 		DecimalFormat dec = new DecimalFormat("#.#");
 		int tempMaxAck=0;
 		int tempMaxNonAck=0;
-		
+		ArrayList<Follower> followers = new ArrayList<Follower>();
+		ArrayList<Integer> noneMajSeq = new ArrayList<Integer>();
+		ArrayList<Integer> majSeq = new ArrayList<Integer>();
+		int numTrail = 3;
+
+
+		Follower f1 = new Follower(1);
+		Follower f2 = new Follower(2);
+		followers.add(f1);
+		followers.add(f2);
+
 		//System.out.println("Enter server number ");
 		serverNumber = 4;
 		
@@ -47,40 +58,63 @@ public class ServerRondomAckWithTwoServers {
 		
 		
 		
-		for (int i=1;i<=1000;i++){
+		for (int i=1;i<=numTrail;i++){
 			System.out.println("Iteration (" + i + ")");
 
 			totalAckGenerated = 0;
 			totalNonAckGenerated = 0;
 			//Loop to obtain 4 random number
-			for (int j = 1; j <= 2; j++){
+			for (int j = 0; j < followers.size(); j++){
 				
 				rand=random.nextDouble();
 				System.out.println(rand);
 				
 				//TO check if the majority are vote
 				if (rand < 0.5 ) {
+					followers.get(j).setAck(true);
+					followers.get(j).countAck();
 					totalAckGenerated ++;	
+					if (i == numTrail)
+						followers.get(j).countNonoAckSeq();
+
 				}
 				
 				else {
+					followers.get(j).setAck(false);
+					followers.get(j).countNonoAckSeq();
 					totalNonAckGenerated ++;	
+					if (i == numTrail)
+						followers.get(j).countAck();
+
 					
 				}
 				
 			
 			}
+				if (ackCounts(followers)>=1){
+					System.out.println("Maj Reach");
+					storeMaxSequentialNonMaj(noneMajSeq, maxSequentialNonMaj);
+					maxSequentialNonMaj=0;
+				   maxSequentialMaj++;
+				   if (i == numTrail){
+					   storeMaxSequentialMaj(majSeq, maxSequentialMaj);
+					   maxSequentialMaj=0;
+				   }
+				}
+				else{
+					System.out.println("Maj not Reach");
+					storeMaxSequentialMaj(majSeq, maxSequentialMaj);
+					maxSequentialMaj=0;
+				    maxSequentialNonMaj++;
+				    if (i == numTrail){
+						storeMaxSequentialNonMaj(noneMajSeq, maxSequentialNonMaj);
+						maxSequentialNonMaj=0;
+				    }
+				}
 			   if (totalAckGenerated == 2){
 			    	twoAck ++;
 			    }
 			    
-//			    else if (totalAckGenerated == 3){
-//			    	threeAck ++;
-//			    }
-//			    		    
-//			    else if (totalAckGenerated == 4){
-//			    	fourAck ++;
-//			    }
 			    else if (totalAckGenerated == 1){
 			    	oneAck ++;
 			    }
@@ -167,7 +201,32 @@ public class ServerRondomAckWithTwoServers {
 		outFile.println();
 		outFile.close();
 
-
+		System.out.println("Avg NonoAck follower1 " +followers.get(0).getCountNonoAcks());
+		System.out.println("Avg NonoAck follower2" +followers.get(1).getCountNonoAcks());
+		System.out.println("Avg For Follower1 " +followers.get(0).getAvg());
+		System.out.println("Avg For Follower2 " +followers.get(1).getAvg());
+		System.out.println("Avg maj " +majSeq);
+		System.out.println("Avg NonoMaj " +noneMajSeq);
+	
 	
 }
+	public static int ackCounts(ArrayList<Follower> fs){
+		int count = 0;
+		for (Follower f:fs){
+			if(f.isAck())
+				count++;
+		}
+			
+		return count;
+	}
+	public static void storeMaxSequentialNonMaj(ArrayList<Integer> noneSeq, Integer noneM){
+		noneSeq.add(noneM);
+		System.out.println("puting nononeM" +noneM);
+
+	}
+	public static void storeMaxSequentialMaj(ArrayList<Integer> seq, Integer maj){
+		seq.add(maj);
+		System.out.println("puting maj" +maj);
+
+	}
 	}
